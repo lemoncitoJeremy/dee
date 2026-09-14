@@ -9,14 +9,27 @@ import type {
   ScheduleInput,
   ScheduleUpdate,
 } from "@/lib/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+const currentlyId = "00000000-0000-0000-0000-000000000301";
+
+function emptyCurrently(): Currently {
+  return {
+    id: currentlyId,
+    listening_to: null,
+    craving: null,
+    watching: null,
+    thinking_about: null,
+    updated_at: new Date(0).toISOString(),
+  };
+}
 
 function requireData<T>(data: T | null, message: string): T {
   if (!data) throw new Error(message);
   return data;
 }
 
-export function createSupabaseRepository(): AppRepository {
-  const client = createBrowserSupabaseClient();
+export function createSupabaseRepository(client: SupabaseClient = createBrowserSupabaseClient()): AppRepository {
 
   return {
     async load() {
@@ -24,7 +37,7 @@ export function createSupabaseRepository(): AppRepository {
         client.from("activities").select("*").order("created_at"),
         client.from("schedules").select("*").order("date").order("time"),
         client.from("dee_questions").select("*").order("created_at"),
-        client.from("currently").select("*").limit(1).single(),
+        client.from("currently").select("*").limit(1).maybeSingle(),
       ]);
       const error =
         activities.error ?? schedules.error ?? questions.error ?? current.error;
@@ -33,7 +46,7 @@ export function createSupabaseRepository(): AppRepository {
         activities: activities.data as Activity[],
         schedules: schedules.data as Schedule[],
         questions: questions.data as DeeQuestion[],
-        currently: current.data as Currently,
+        currently: (current.data as Currently | null) ?? emptyCurrently(),
       };
     },
     async createSchedule(input: ScheduleInput) {
@@ -72,8 +85,7 @@ export function createSupabaseRepository(): AppRepository {
     async updateCurrently(input: CurrentlyInput) {
       const { data, error } = await client
         .from("currently")
-        .update(input)
-        .eq("id", "00000000-0000-0000-0000-000000000301")
+        .upsert({ id: currentlyId, ...input }, { onConflict: "id" })
         .select()
         .single();
       if (error) throw error;

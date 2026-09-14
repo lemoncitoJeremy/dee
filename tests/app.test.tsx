@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import Home from "@/app/page";
@@ -32,6 +32,33 @@ describe("wanna know dee", () => {
     expect(
       screen.getByRole("button", { name: /japanese food/i }),
     ).toBeVisible();
+  });
+
+  it("returns to the previous in-app view when browser Back is pressed", async () => {
+    const user = userEvent.setup();
+    render(<Home />);
+
+    await user.click(screen.getByRole("button", { name: /start/i }));
+    const homeHistoryState = window.history.state;
+    await user.click(screen.getByRole("button", { name: /matcha girly/i }));
+    expect(screen.getByRole("heading", { name: /matcha girly/i })).toBeVisible();
+
+    act(() => {
+      window.dispatchEvent(new PopStateEvent("popstate", { state: homeHistoryState }));
+    });
+
+    expect(screen.getByRole("heading", { name: /what are we feeling/i })).toBeVisible();
+  });
+
+  it("does not add browser history when the active tab is tapped again", async () => {
+    const user = userEvent.setup();
+    render(<Home />);
+
+    await user.click(screen.getByRole("button", { name: /start/i }));
+    const historyLength = window.history.length;
+    await user.click(screen.getByRole("button", { name: /^home$/i }));
+
+    expect(window.history.length).toBe(historyLength);
   });
 
   it("adds, edits, and deletes a schedule from an activity", async () => {

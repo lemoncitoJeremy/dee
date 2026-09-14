@@ -37,6 +37,14 @@ type AppDataValue = {
 
 const AppDataContext = createContext<AppDataValue | null>(null);
 
+function errorMessage(error: unknown, fallback: string): string {
+  if (error && typeof error === "object" && "message" in error) {
+    const message = String((error as { message: unknown }).message).trim();
+    if (message) return `${fallback} (${message})`;
+  }
+  return fallback;
+}
+
 export function AppDataProvider({ children, repositoryOverride }: { children: ReactNode; repositoryOverride?: AppRepository }) {
   const mode = hasSupabaseEnvironment() ? "supabase" : "demo";
   const repository = useMemo(
@@ -69,8 +77,9 @@ export function AppDataProvider({ children, repositoryOverride }: { children: Re
     [],
   );
 
-  const failMutation = useCallback((): never => {
-    setError("That didn’t save. Your other changes are still here—please try again.");
+  const failMutation = useCallback((cause: unknown): never => {
+    setError(errorMessage(cause, "That didn’t save. Your other changes are still here—please try again."));
+    if (cause) throw cause;
     throw new Error("Save failed");
   }, []);
 
@@ -80,8 +89,8 @@ export function AppDataProvider({ children, repositoryOverride }: { children: Re
     try {
       const loaded = await repository.load();
       commitSnapshot(() => loaded);
-    } catch {
-      setError("We couldn’t load Dee’s little world. Try again?");
+    } catch (cause) {
+      setError(errorMessage(cause, "We couldn’t load Dee’s little world. Try again?"));
     } finally {
       setLoading(false);
     }
@@ -91,8 +100,8 @@ export function AppDataProvider({ children, repositoryOverride }: { children: Re
     let active = true;
     repository.load().then((loaded) => {
       if (active) commitSnapshot(() => loaded);
-    }).catch(() => {
-      if (active) setError("We couldn’t load Dee’s little world. Try again?");
+    }).catch((cause) => {
+      if (active) setError(errorMessage(cause, "We couldn’t load Dee’s little world. Try again?"));
     }).finally(() => {
       if (active) setLoading(false);
     });
@@ -116,12 +125,12 @@ export function AppDataProvider({ children, repositoryOverride }: { children: Re
             ? current.schedules.map((item) => item.id === temporary.id ? created : item)
             : [...current.schedules, created],
         }));
-      } catch {
+      } catch (cause) {
         commitSnapshot((current) => ({
           ...current,
           schedules: current.schedules.filter((item) => item.id !== temporary.id),
         }));
-        failMutation();
+        failMutation(cause);
       }
     },
     [commitSnapshot, failMutation, repository],
@@ -144,7 +153,7 @@ export function AppDataProvider({ children, repositoryOverride }: { children: Re
           ...current,
           schedules: current.schedules.map((item) => item.id === id ? updated : item),
         }));
-      } catch {
+      } catch (cause) {
         if (isLatestMutation(key, version) && previous) {
           commitSnapshot((current) => ({
             ...current,
@@ -153,7 +162,7 @@ export function AppDataProvider({ children, repositoryOverride }: { children: Re
               : [...current.schedules, previous],
           }));
         }
-        failMutation();
+        failMutation(cause);
       }
     },
     [beginMutation, commitSnapshot, failMutation, isLatestMutation, repository],
@@ -168,11 +177,11 @@ export function AppDataProvider({ children, repositoryOverride }: { children: Re
       commitSnapshot((current) => ({ ...current, schedules: current.schedules.filter((item) => item.id !== id) }));
       try {
         await repository.deleteSchedule(id);
-      } catch {
+      } catch (cause) {
         if (isLatestMutation(key, version) && previous) {
           commitSnapshot((current) => ({ ...current, schedules: [...current.schedules, previous] }));
         }
-        failMutation();
+        failMutation(cause);
       }
     },
     [beginMutation, commitSnapshot, failMutation, isLatestMutation, repository],
@@ -198,14 +207,14 @@ export function AppDataProvider({ children, repositoryOverride }: { children: Re
           ...current,
           questions: current.questions.map((item) => item.id === id ? updated : item),
         }));
-      } catch {
+      } catch (cause) {
         if (isLatestMutation(key, version) && previous) {
           commitSnapshot((current) => ({
             ...current,
             questions: current.questions.map((item) => item.id === id ? previous : item),
           }));
         }
-        failMutation();
+        failMutation(cause);
       }
     },
     [beginMutation, commitSnapshot, failMutation, isLatestMutation, repository],
@@ -225,11 +234,11 @@ export function AppDataProvider({ children, repositoryOverride }: { children: Re
         const updated = await repository.updateCurrently(input);
         if (!isLatestMutation(key, version)) return;
         commitSnapshot((current) => ({ ...current, currently: updated }));
-      } catch {
+      } catch (cause) {
         if (isLatestMutation(key, version)) {
           commitSnapshot((current) => ({ ...current, currently: previous }));
         }
-        failMutation();
+        failMutation(cause);
       }
     },
     [beginMutation, commitSnapshot, failMutation, isLatestMutation, repository],

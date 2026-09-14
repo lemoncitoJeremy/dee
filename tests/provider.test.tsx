@@ -72,7 +72,7 @@ describe("AppDataProvider", () => {
         notes: "still here",
       });
     });
-    await expect(actions!.updateQuestion(demoSnapshot.questions[0].id, "matcha")).rejects.toThrow("Save failed");
+    await expect(actions!.updateQuestion(demoSnapshot.questions[0].id, "matcha")).rejects.toThrow("offline");
     created.resolve({
       id: "created",
       activity_id: demoSnapshot.activities[0].id,
@@ -84,5 +84,34 @@ describe("AppDataProvider", () => {
     await act(async () => { await createPromise; });
 
     expect(screen.getByText("still here")).toBeVisible();
+  });
+
+  it("preserves the backend error for callers and shows it in the banner", async () => {
+    const backendError = new Error("new row violates row-level security policy");
+    const repository: AppRepository = {
+      load: vi.fn(async () => structuredClone(demoSnapshot)),
+      createSchedule: vi.fn(async () => { throw backendError; }),
+      updateSchedule: vi.fn(),
+      deleteSchedule: vi.fn(),
+      updateQuestion: vi.fn(),
+      updateCurrently: vi.fn(),
+    };
+    let actions: ReturnType<typeof useAppData> | undefined;
+    function Harness() {
+      actions = useAppData();
+      return actions.error ? <div role="alert">{actions.error}</div> : null;
+    }
+    render(<AppDataProvider repositoryOverride={repository}><Harness /></AppDataProvider>);
+    await waitFor(() => expect(repository.load).toHaveBeenCalled());
+
+    const save = actions!.createSchedule({
+      activity_id: demoSnapshot.activities[0].id,
+      date: "2026-09-17",
+      time: "18:00:00",
+      notes: null,
+    });
+
+    await expect(save).rejects.toBe(backendError);
+    expect(await screen.findByRole("alert")).toHaveTextContent(/row-level security policy/i);
   });
 });

@@ -91,6 +91,12 @@ alter table public.schedules enable row level security;
 alter table public.dee_questions enable row level security;
 alter table public.currently enable row level security;
 
+grant usage on schema public to anon;
+grant select on public.activities to anon;
+grant select, insert, update, delete on public.schedules to anon;
+grant select, update on public.dee_questions to anon;
+grant select, insert, update on public.currently to anon;
+
 drop policy if exists "public activities access" on public.activities;
 create policy "public activities access" on public.activities
 for all to anon using (true) with check (true);
