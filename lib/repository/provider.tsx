@@ -15,6 +15,7 @@ import { demoSnapshot } from "@/lib/seed";
 import { hasSupabaseEnvironment } from "@/lib/supabase/client";
 import type {
   AppSnapshot,
+  AppRepository,
   CurrentlyInput,
   ScheduleInput,
   ScheduleUpdate,
@@ -35,14 +36,14 @@ type AppDataValue = {
 
 const AppDataContext = createContext<AppDataValue | null>(null);
 
-export function AppDataProvider({ children }: { children: ReactNode }) {
+export function AppDataProvider({ children, repositoryOverride }: { children: ReactNode; repositoryOverride?: AppRepository }) {
   const mode = hasSupabaseEnvironment() ? "supabase" : "demo";
   const repository = useMemo(
     () =>
-      mode === "supabase"
+      repositoryOverride ?? (mode === "supabase"
         ? createSupabaseRepository()
-        : createMemoryRepository(demoSnapshot),
-    [mode],
+        : createMemoryRepository(demoSnapshot)),
+    [mode, repositoryOverride],
   );
   const [snapshot, setSnapshot] = useState<AppSnapshot>(demoSnapshot);
   const [loading, setLoading] = useState(mode === "supabase");
@@ -61,112 +62,120 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }, [repository]);
 
   useEffect(() => {
-    void retry();
-  }, [retry]);
+    let active = true;
+    repository.load().then((loaded) => {
+      if (active) setSnapshot(loaded);
+    }).catch(() => {
+      if (active) setError("We couldn’t load Dee’s little world. Try again?");
+    }).finally(() => {
+      if (active) setLoading(false);
+    });
+    return () => { active = false; };
+  }, [repository]);
 
-  const withRollback = useCallback(
-    async (optimistic: AppSnapshot, operation: () => Promise<AppSnapshot>) => {
-      const previous = snapshot;
-      setSnapshot(optimistic);
-      setError(null);
-      try {
-        setSnapshot(await operation());
-      } catch {
-        setSnapshot(previous);
-        setError("That didn’t save. Your last version is still here—please try again.");
-        throw new Error("Save failed");
-      }
-    },
-    [snapshot],
-  );
+  const recoverFromFailure = useCallback(async () => {
+    try {
+      setSnapshot(await repository.load());
+    } catch {
+      // Keep the latest optimistic UI if the authoritative reload also fails.
+    }
+    setError("That didn’t save. Please try again.");
+    throw new Error("Save failed");
+  }, [repository]);
 
   const createSchedule = useCallback(
     async (input: ScheduleInput) => {
       const temporary = {
         ...input,
-        id: `pending-${Date.now()}`,
+        id: `pending-${globalThis.crypto?.randomUUID?.() ?? Date.now()}`,
         created_at: new Date().toISOString(),
       };
-      await withRollback(
-        { ...snapshot, schedules: [...snapshot.schedules, temporary] },
-        async () => {
-          const created = await repository.createSchedule(input);
-          return { ...snapshot, schedules: [...snapshot.schedules, created] };
-        },
-      );
+      setError(null);
+      setSnapshot((current) => ({ ...current, schedules: [...current.schedules, temporary] }));
+      try {
+        const created = await repository.createSchedule(input);
+        setSnapshot((current) => ({
+          ...current,
+          schedules: current.schedules.map((item) => item.id === temporary.id ? created : item),
+        }));
+      } catch {
+        await recoverFromFailure();
+      }
     },
-    [repository, snapshot, withRollback],
+    [recoverFromFailure, repository],
   );
 
   const updateSchedule = useCallback(
     async (id: string, input: ScheduleUpdate) => {
-      const optimistic = {
-        ...snapshot,
-        schedules: snapshot.schedules.map((item) =>
-          item.id === id ? { ...item, ...input } : item,
-        ),
-      };
-      await withRollback(optimistic, async () => {
+      setError(null);
+      setSnapshot((current) => ({
+        ...current,
+        schedules: current.schedules.map((item) => item.id === id ? { ...item, ...input } : item),
+      }));
+      try {
         const updated = await repository.updateSchedule(id, input);
-        return {
-          ...snapshot,
-          schedules: snapshot.schedules.map((item) =>
-            item.id === id ? updated : item,
-          ),
-        };
-      });
+        setSnapshot((current) => ({
+          ...current,
+          schedules: current.schedules.map((item) => item.id === id ? updated : item),
+        }));
+      } catch {
+        await recoverFromFailure();
+      }
     },
-    [repository, snapshot, withRollback],
+    [recoverFromFailure, repository],
   );
 
   const deleteSchedule = useCallback(
     async (id: string) => {
-      const next = {
-        ...snapshot,
-        schedules: snapshot.schedules.filter((item) => item.id !== id),
-      };
-      await withRollback(next, async () => {
+      setError(null);
+      setSnapshot((current) => ({ ...current, schedules: current.schedules.filter((item) => item.id !== id) }));
+      try {
         await repository.deleteSchedule(id);
-        return next;
-      });
+      } catch {
+        await recoverFromFailure();
+      }
     },
-    [repository, snapshot, withRollback],
+    [recoverFromFailure, repository],
   );
 
   const updateQuestion = useCallback(
     async (id: string, answer: string) => {
       const now = new Date().toISOString();
-      const optimistic = {
-        ...snapshot,
-        questions: snapshot.questions.map((item) =>
+      setError(null);
+      setSnapshot((current) => ({
+        ...current,
+        questions: current.questions.map((item) =>
           item.id === id ? { ...item, answer: answer.trim() || null, updated_at: now } : item,
         ),
-      };
-      await withRollback(optimistic, async () => {
+      }));
+      try {
         const updated = await repository.updateQuestion(id, answer);
-        return {
-          ...snapshot,
-          questions: snapshot.questions.map((item) =>
-            item.id === id ? updated : item,
-          ),
-        };
-      });
+        setSnapshot((current) => ({
+          ...current,
+          questions: current.questions.map((item) => item.id === id ? updated : item),
+        }));
+      } catch {
+        await recoverFromFailure();
+      }
     },
-    [repository, snapshot, withRollback],
+    [recoverFromFailure, repository],
   );
 
   const updateCurrently = useCallback(
     async (input: CurrentlyInput) => {
-      const optimistic = {
-        ...snapshot,
-        currently: { ...snapshot.currently, ...input, updated_at: new Date().toISOString() },
-      };
-      await withRollback(optimistic, async () => ({
-        ...snapshot,
-        currently: await repository.updateCurrently(input),
+      setError(null);
+      setSnapshot((current) => ({
+        ...current,
+        currently: { ...current.currently, ...input, updated_at: new Date().toISOString() },
       }));
+      try {
+        const updated = await repository.updateCurrently(input);
+        setSnapshot((current) => ({ ...current, currently: updated }));
+      } catch {
+        await recoverFromFailure();
+      }
     },
-    [repository, snapshot, withRollback],
+    [recoverFromFailure, repository],
   );
 
   return (

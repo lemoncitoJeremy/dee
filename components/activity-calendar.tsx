@@ -13,6 +13,7 @@ export function ActivityCalendar({ activity, onBack }: { activity: Activity; onB
   const { snapshot, createSchedule, updateSchedule, deleteSchedule } = useAppData();
   const [anchor, setAnchor] = useState(() => startOfWeek(new Date()));
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogSession, setDialogSession] = useState(0);
   const [selected, setSelected] = useState<Schedule | undefined>();
   const days = weekDays(anchor);
   const schedules = useMemo(
@@ -23,6 +24,7 @@ export function ActivityCalendar({ activity, onBack }: { activity: Activity; onB
 
   const openNew = () => {
     setSelected(undefined);
+    setDialogSession((current) => current + 1);
     setDialogOpen(true);
   };
 
@@ -47,7 +49,7 @@ export function ActivityCalendar({ activity, onBack }: { activity: Activity; onB
                     key={item.id}
                     className="event-pill"
                     aria-label={`${formatTime(item.time)} ${item.notes || activity.name}`}
-                    onClick={() => { setSelected(item); setDialogOpen(true); }}
+                    onClick={() => { setSelected(item); setDialogSession((current) => current + 1); setDialogOpen(true); }}
                   >
                     <time>{formatTime(item.time)}</time>
                     <span>{item.notes || activity.name}</span>
@@ -61,7 +63,7 @@ export function ActivityCalendar({ activity, onBack }: { activity: Activity; onB
       </div>
       {schedules.length === 0 && <div className="empty-week"><span>♡</span><p>No plans this week yet.</p><button onClick={openNew}>Let’s add one →</button></div>}
       <ScheduleDialog
-        key={selected?.id ?? "new"}
+        key={`${selected?.id ?? "new"}-${dialogSession}`}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         activity={activity}

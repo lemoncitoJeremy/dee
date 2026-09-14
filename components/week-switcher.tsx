@@ -1,25 +1,6 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { startOfWeek, weekDays } from "@/lib/calendar";
+import { formatWeekRange, startOfWeek } from "@/lib/calendar";
 import { Button } from "@/components/ui/button";
-
-function weekLabel(anchor: Date): string {
-  const days = weekDays(anchor);
-  const start = days[0];
-  const end = days[6];
-  const startLabel = start.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-  const endLabel =
-    start.getMonth() === end.getMonth()
-      ? `${end.getDate()}, ${end.getFullYear()}`
-      : end.toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        });
-  return `${startLabel}–${endLabel}`;
-}
 
 export function WeekSwitcher({
   anchor,
@@ -40,7 +21,7 @@ export function WeekSwitcher({
         <ChevronLeft /> <span className="hidden sm:inline">Previous Week</span>
       </Button>
       <button className="week-date" onClick={() => onChange(startOfWeek(new Date()))}>
-        <span>{weekLabel(anchor)}</span>
+        <span>{formatWeekRange(anchor)}</span>
         <small>This Week</small>
       </button>
       <Button variant="ghost" size="sm" onClick={() => move(1)} aria-label="Next Week">

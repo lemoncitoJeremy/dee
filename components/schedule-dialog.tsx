@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import type { Activity, Schedule, ScheduleInput } from "@/lib/types";
 import { formatTime } from "@/lib/calendar";
 import { Button } from "@/components/ui/button";
@@ -51,14 +51,6 @@ export function ScheduleDialog({
   const [time, setTime] = useState(schedule?.time.slice(0, 5) ?? "18:00");
   const [notes, setNotes] = useState(schedule?.notes ?? "");
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (!open) return;
-    setEditing(!schedule);
-    setDate(schedule?.date ?? defaultDate);
-    setTime(schedule?.time.slice(0, 5) ?? "18:00");
-    setNotes(schedule?.notes ?? "");
-  }, [defaultDate, open, schedule]);
 
   const save = async (event: FormEvent) => {
     event.preventDefault();

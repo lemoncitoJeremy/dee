@@ -13,6 +13,7 @@ describe("WebMCP tools", () => {
     registerAppTools(context, {
       listActivities: () => [],
       listSchedules: () => [],
+      listQuestions: () => [],
       addSchedule: vi.fn(),
       updateQuestion: vi.fn(),
       updateCurrently: vi.fn(),
@@ -39,6 +40,7 @@ describe("WebMCP tools", () => {
       {
         listActivities: () => [],
         listSchedules: () => [],
+        listQuestions: () => [],
         addSchedule,
         updateQuestion: vi.fn(),
         updateCurrently: vi.fn(),
@@ -52,6 +54,48 @@ describe("WebMCP tools", () => {
     expect(addSchedule).not.toHaveBeenCalled();
   });
 
+  it("rejects impossible dates, times, and unknown activities", async () => {
+    const tools: RegisteredTool[] = [];
+    const addSchedule = vi.fn();
+    await registerAppTools(
+      { registerTool: (tool) => { tools.push(tool); } },
+      {
+        listActivities: () => [{ id: "known", name: "Matcha", description: "", icon: "🍵", created_at: "" }],
+        listSchedules: () => [],
+        listQuestions: () => [],
+        addSchedule,
+        updateQuestion: vi.fn(),
+        updateCurrently: vi.fn(),
+      },
+    );
+    const tool = tools.find((item) => item.name === "add_schedule");
+
+    await expect(tool?.execute({ activity_id: "known", date: "2026-02-31", time: "18:00" })).rejects.toThrow("valid calendar date");
+    await expect(tool?.execute({ activity_id: "known", date: "2026-09-17", time: "29:75" })).rejects.toThrow("valid 24-hour time");
+    await expect(tool?.execute({ activity_id: "missing", date: "2026-09-17", time: "18:00" })).rejects.toThrow("activity_id");
+    expect(addSchedule).not.toHaveBeenCalled();
+  });
+
+  it("requires a complete Currently update so omitted fields are not cleared", async () => {
+    const tools: RegisteredTool[] = [];
+    const updateCurrently = vi.fn();
+    await registerAppTools(
+      { registerTool: (tool) => { tools.push(tool); } },
+      {
+        listActivities: () => [],
+        listSchedules: () => [],
+        listQuestions: () => [],
+        addSchedule: vi.fn(),
+        updateQuestion: vi.fn(),
+        updateCurrently,
+      },
+    );
+    const tool = tools.find((item) => item.name === "update_dee_currently");
+
+    await expect(tool?.execute({ listening_to: "NIKI" })).rejects.toThrow("all four");
+    expect(updateCurrently).not.toHaveBeenCalled();
+  });
+
   it("ignores expected registration aborts during React cleanup", async () => {
     const context = {
       registerTool: () => Promise.reject(new DOMException("Cancelled", "AbortError")),
@@ -61,6 +105,7 @@ describe("WebMCP tools", () => {
       registerAppTools(context, {
         listActivities: () => [],
         listSchedules: () => [],
+        listQuestions: () => [],
         addSchedule: vi.fn(),
         updateQuestion: vi.fn(),
         updateCurrently: vi.fn(),

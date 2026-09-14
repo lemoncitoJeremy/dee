@@ -2,6 +2,10 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import Home from "@/app/page";
+import { dateKey, formatWeekRange, shiftWeek, startOfWeek, weekDays } from "@/lib/calendar";
+
+const thisMonday = startOfWeek(new Date());
+const thisThursday = dateKey(weekDays(thisMonday)[3]);
 
 describe("wanna know dee", () => {
   it("starts with the personal landing panel", () => {
@@ -38,7 +42,7 @@ describe("wanna know dee", () => {
     await user.click(screen.getByRole("button", { name: /matcha girly/i }));
     await user.click(screen.getByRole("button", { name: /add schedule/i }));
     await user.clear(screen.getByLabelText(/^date$/i));
-    await user.type(screen.getByLabelText(/^date$/i), "2026-09-17");
+    await user.type(screen.getByLabelText(/^date$/i), thisThursday);
     await user.clear(screen.getByLabelText(/^time$/i));
     await user.type(screen.getByLabelText(/^time$/i), "18:00");
     await user.type(
@@ -71,14 +75,32 @@ describe("wanna know dee", () => {
 
     await user.click(screen.getByRole("button", { name: /start/i }));
     await user.click(screen.getByRole("button", { name: /matcha girly/i }));
-    expect(screen.getByText(/sep 14.*20, 2026/i)).toBeVisible();
+    expect(screen.getByText(formatWeekRange(thisMonday))).toBeVisible();
     await user.click(screen.getByRole("button", { name: /next week/i }));
-    expect(screen.getByText(/sep 21.*27, 2026/i)).toBeVisible();
+    expect(screen.getByText(formatWeekRange(shiftWeek(thisMonday, 1)))).toBeVisible();
 
     await user.click(screen.getByRole("button", { name: /^schedule$/i }));
     expect(
       screen.getByRole("heading", { name: /all our little plans/i }),
     ).toBeVisible();
+  });
+
+  it("shows early-morning schedules in the combined calendar", async () => {
+    const user = userEvent.setup();
+    render(<Home />);
+
+    await user.click(screen.getByRole("button", { name: /start/i }));
+    await user.click(screen.getByRole("button", { name: /matcha girly/i }));
+    await user.click(screen.getByRole("button", { name: /add schedule/i }));
+    await user.clear(screen.getByLabelText(/^date$/i));
+    await user.type(screen.getByLabelText(/^date$/i), thisThursday);
+    await user.clear(screen.getByLabelText(/^time$/i));
+    await user.type(screen.getByLabelText(/^time$/i), "05:30");
+    await user.click(screen.getByRole("button", { name: /save schedule/i }));
+    await user.click(screen.getByRole("button", { name: /^schedule$/i }));
+
+    expect(await screen.findAllByRole("button", { name: /matcha girly 5:30 am/i })).not.toHaveLength(0);
+    expect(screen.getByText("05:00")).toBeVisible();
   });
 
   it("saves Dee's answers and turns them into little facts", async () => {

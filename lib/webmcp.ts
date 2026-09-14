@@ -1,4 +1,4 @@
-import type { Activity, CurrentlyInput, Schedule, ScheduleInput } from "@/lib/types";
+import type { Activity, CurrentlyInput, DeeQuestion, Schedule, ScheduleInput } from "@/lib/types";
 
 export type RegisteredTool = {
   name: string;
@@ -19,6 +19,7 @@ type ModelContext = {
 type AppToolActions = {
   listActivities: () => Activity[];
   listSchedules: () => Schedule[];
+  listQuestions: () => DeeQuestion[];
   addSchedule: (input: ScheduleInput) => Promise<void> | void;
   updateQuestion: (id: string, answer: string) => Promise<void> | void;
   updateCurrently: (input: CurrentlyInput) => Promise<void> | void;
@@ -35,6 +36,19 @@ function stringValue(input: Record<string, unknown>, key: string): string {
   const value = input[key];
   if (typeof value !== "string") throw new Error(`${key} must be a string.`);
   return value;
+}
+
+function validDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split("-").map(Number);
+  const parsed = new Date(year, month - 1, day);
+  return parsed.getFullYear() === year && parsed.getMonth() === month - 1 && parsed.getDate() === day;
+}
+
+function validTime(value: string): boolean {
+  if (!/^\d{2}:\d{2}$/.test(value)) return false;
+  const [hour, minute] = value.split(":").map(Number);
+  return hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59;
 }
 
 function isAbortError(error: unknown): boolean {
@@ -96,9 +110,15 @@ export async function registerAppTools(
         const date = stringValue(value, "date");
         const time = stringValue(value, "time");
         if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("date must use YYYY-MM-DD.");
+        if (!validDate(date)) throw new Error("date must be a valid calendar date.");
         if (!/^\d{2}:\d{2}$/.test(time)) throw new Error("time must use HH:mm.");
+        if (!validTime(time)) throw new Error("time must be a valid 24-hour time.");
+        const activityId = stringValue(value, "activity_id");
+        if (!actions.listActivities().some((activity) => activity.id === activityId)) {
+          throw new Error("activity_id must identify an available activity.");
+        }
         await actions.addSchedule({
-          activity_id: stringValue(value, "activity_id"),
+          activity_id: activityId,
           date,
           time: `${time}:00`,
           notes: typeof value.notes === "string" ? value.notes : null,
@@ -119,7 +139,11 @@ export async function registerAppTools(
       annotations: { readOnlyHint: false, untrustedContentHint: false },
       async execute(input) {
         const value = record(input);
-        await actions.updateQuestion(stringValue(value, "question_id"), stringValue(value, "answer"));
+        const questionId = stringValue(value, "question_id");
+        if (!actions.listQuestions().some((question) => question.id === questionId)) {
+          throw new Error("question_id must identify an available question.");
+        }
+        await actions.updateQuestion(questionId, stringValue(value, "answer"));
         return { status: "saved" };
       },
     },
@@ -133,16 +157,21 @@ export async function registerAppTools(
           listening_to: { type: "string" }, craving: { type: "string" },
           watching: { type: "string" }, thinking_about: { type: "string" },
         },
+        required: ["listening_to", "craving", "watching", "thinking_about"],
         additionalProperties: false,
       },
       annotations: { readOnlyHint: false, untrustedContentHint: false },
       async execute(input) {
         const value = record(input);
+        const required = ["listening_to", "craving", "watching", "thinking_about"] as const;
+        if (!required.every((key) => typeof value[key] === "string")) {
+          throw new Error("Currently updates must include all four text fields.");
+        }
         await actions.updateCurrently({
-          listening_to: typeof value.listening_to === "string" ? value.listening_to : null,
-          craving: typeof value.craving === "string" ? value.craving : null,
-          watching: typeof value.watching === "string" ? value.watching : null,
-          thinking_about: typeof value.thinking_about === "string" ? value.thinking_about : null,
+          listening_to: stringValue(value, "listening_to").trim() || null,
+          craving: stringValue(value, "craving").trim() || null,
+          watching: stringValue(value, "watching").trim() || null,
+          thinking_about: stringValue(value, "thinking_about").trim() || null,
         });
         return { status: "saved" };
       },

@@ -21,6 +21,12 @@ export function ScheduleView() {
   const [selected, setSelected] = useState<Schedule | undefined>();
   const days = weekDays(anchor);
   const schedules = useMemo(() => snapshot.schedules.filter((item) => isDateInWeek(item.date, anchor)), [anchor, snapshot.schedules]);
+  const hours = useMemo(() => {
+    const scheduledHours = schedules.map((item) => Number(item.time.slice(0, 2))).filter(Number.isFinite);
+    const first = Math.min(9, ...scheduledHours);
+    const last = Math.max(22, ...scheduledHours);
+    return Array.from({ length: last - first + 1 }, (_, index) => first + index);
+  }, [schedules]);
   const grouped = groupSchedulesByDate(schedules);
   const activity = selected ? snapshot.activities.find((item) => item.id === selected.activity_id) : undefined;
 
@@ -50,14 +56,15 @@ export function ScheduleView() {
       <div className="desktop-calendar">
         <div className="calendar-corner">time</div>
         {days.map((day) => <div className="calendar-day-head" key={dateKey(day)}><span>{day.toLocaleDateString("en-US", { weekday: "short" })}</span><strong>{day.getDate()}</strong></div>)}
-        {Array.from({ length: 14 }, (_, index) => index + 9).map((hour) => (
+        {hours.map((hour) => (
           <div className="contents" key={hour}>
             <time className="calendar-hour">{String(hour).padStart(2, "0")}:00</time>
             {days.map((day) => {
               const items = (grouped.get(dateKey(day)) ?? []).filter((item) => Number(item.time.slice(0, 2)) === hour);
               return <div className="calendar-cell" key={`${dateKey(day)}-${hour}`}>{items.map((item) => {
                 const itemActivity = snapshot.activities.find((candidate) => candidate.id === item.activity_id);
-                return <button key={item.id} className={`grid-event ${activityTone[item.activity_id] ?? ""}`} onClick={() => setSelected(item)} aria-label={`${itemActivity?.name} ${formatTime(item.time)} ${item.notes ?? ""}`}><span>{itemActivity?.icon} {itemActivity?.name}</span><small>{formatTime(item.time)}</small></button>;
+                const minute = Number(item.time.slice(3, 5));
+                return <button key={item.id} className={`grid-event ${activityTone[item.activity_id] ?? ""}`} style={{ marginTop: `${Math.round(minute * 0.6)}px` }} onClick={() => setSelected(item)} aria-label={`${itemActivity?.name} ${formatTime(item.time)} ${item.notes ?? ""}`}><span>{itemActivity?.icon} {itemActivity?.name}</span><small>{formatTime(item.time)}</small></button>;
               })}</div>;
             })}
           </div>

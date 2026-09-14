@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { RefreshCw, Sparkles } from "lucide-react";
 import { useAppData } from "@/lib/repository/provider";
 import type { DeeQuestion } from "@/lib/types";
@@ -53,9 +53,7 @@ export function DeesWorld() {
     [snapshot.questions],
   );
 
-  useEffect(() => {
-    if (factIndex >= facts.length) setFactIndex(0);
-  }, [factIndex, facts.length]);
+  const visibleFactIndex = facts.length ? factIndex % facts.length : 0;
 
   const saveQuestion = async (question: DeeQuestion) => {
     setSavingQuestion(question.id);
@@ -121,7 +119,7 @@ export function DeesWorld() {
         <aside className="world-side">
           <section className="fact-card" aria-live="polite">
             <div className="fact-title"><Sparkles /> Random Dee Fact</div>
-            {facts.length ? <p><strong>Did you know?</strong><br />{facts[factIndex] ?? facts[0]}</p> : <p>Answer any little question and a Dee fact will appear here. ✨</p>}
+            {facts.length ? <p><strong>Did you know?</strong><br />{facts[visibleFactIndex]}</p> : <p>Answer any little question and a Dee fact will appear here. ✨</p>}
             <button onClick={() => setFactIndex((currentIndex) => facts.length > 1 ? (currentIndex + 1) % facts.length : 0)} disabled={facts.length === 0}>
               <RefreshCw /> Another one →
             </button>

@@ -21,7 +21,7 @@ function identifier(): string {
 export function createMemoryRepository(
   seed: AppSnapshot = demoSnapshot,
 ): AppRepository {
-  let state = clone(seed);
+  const state = clone(seed);
 
   return {
     async load() {

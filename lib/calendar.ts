@@ -47,6 +47,17 @@ export function shiftWeek(anchor: Date, amount: number): Date {
   return shifted;
 }
 
+export function formatWeekRange(anchor: Date): string {
+  const days = weekDays(anchor);
+  const start = days[0];
+  const end = days[6];
+  const startLabel = start.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const endLabel = start.getMonth() === end.getMonth()
+    ? `${end.getDate()}, ${end.getFullYear()}`
+    : end.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return `${startLabel}–${endLabel}`;
+}
+
 export function isDateInWeek(value: string, anchor: Date): boolean {
   const key = dateKey(startOfWeek(anchor));
   return value >= key && value <= dateKey(weekDays(anchor)[6]);

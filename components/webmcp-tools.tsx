@@ -25,6 +25,7 @@ export function WebMcpTools() {
       {
         listActivities: () => snapshot.activities,
         listSchedules: () => snapshot.schedules,
+        listQuestions: () => snapshot.questions,
         addSchedule: createSchedule,
         updateQuestion,
         updateCurrently,
@@ -34,7 +35,7 @@ export function WebMcpTools() {
       console.error("Unable to register Wanna Know Dee tools.", error);
     });
     return () => lifecycle.abort();
-  }, [createSchedule, snapshot.activities, snapshot.schedules, updateCurrently, updateQuestion]);
+  }, [createSchedule, snapshot.activities, snapshot.questions, snapshot.schedules, updateCurrently, updateQuestion]);
 
   return null;
 }
