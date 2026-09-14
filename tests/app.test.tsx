@@ -80,4 +80,53 @@ describe("wanna know dee", () => {
       screen.getByRole("heading", { name: /all our little plans/i }),
     ).toBeVisible();
   });
+
+  it("saves Dee's answers and turns them into little facts", async () => {
+    const user = userEvent.setup();
+    render(<Home />);
+
+    await user.click(screen.getByRole("button", { name: /start/i }));
+    await user.click(screen.getByRole("button", { name: /dee's world/i }));
+    expect(
+      screen.getByRole("heading", { name: /dee's world/i }),
+    ).toBeVisible();
+
+    await user.type(
+      screen.getByRole("textbox", { name: /favorite drink/i }),
+      "matcha",
+    );
+    await user.click(
+      screen.getByRole("button", { name: /save favorite drink/i }),
+    );
+    expect(await screen.findByText(/favorite drink is matcha/i)).toBeVisible();
+
+    await user.type(
+      screen.getByRole("textbox", { name: /favorite food/i }),
+      "ramen",
+    );
+    await user.click(
+      screen.getByRole("button", { name: /save favorite food/i }),
+    );
+    await user.click(screen.getByRole("button", { name: /another one/i }));
+    expect(await screen.findByText(/favorite food is ramen/i)).toBeVisible();
+  });
+
+  it("updates what Dee is currently into", async () => {
+    const user = userEvent.setup();
+    render(<Home />);
+
+    await user.click(screen.getByRole("button", { name: /start/i }));
+    await user.click(screen.getByRole("button", { name: /dee's world/i }));
+    await user.type(screen.getByLabelText(/listening to/i), "NIKI");
+    await user.type(screen.getByLabelText(/craving/i), "ramen");
+    await user.type(screen.getByLabelText(/watching/i), "Formula 1");
+    await user.type(
+      screen.getByRole("textbox", { name: /^💭 thinking about$/i }),
+      "the weekend",
+    );
+    await user.click(screen.getByRole("button", { name: /save currently/i }));
+
+    expect(screen.getByDisplayValue("NIKI")).toBeVisible();
+    expect(screen.getByText(/saved just now/i)).toBeVisible();
+  });
 });

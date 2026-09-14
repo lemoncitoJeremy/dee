@@ -7,6 +7,7 @@ import { useAppData } from "@/lib/repository/provider";
 import { HomeView } from "@/components/home-view";
 import { ActivityCalendar } from "@/components/activity-calendar";
 import { ScheduleView } from "@/components/schedule-view";
+import { DeesWorld } from "@/components/dees-world";
 
 type Tab = "home" | "schedule" | "world";
 
@@ -42,7 +43,7 @@ export function AppShell() {
         <div className="page-stage">
           {tab === "home" && (activity ? <ActivityCalendar activity={activity} onBack={() => setActivity(null)} /> : <HomeView activities={snapshot.activities} onOpen={setActivity} />)}
           {tab === "schedule" && <ScheduleView />}
-          {tab === "world" && <section className="content-wrap"><header className="page-heading"><p className="eyebrow">a personal corner</p><h1>Dee’s World 💗</h1><p>A few things about Dee.</p></header><div className="coming-card">This little corner is getting ready.</div></section>}
+          {tab === "world" && <DeesWorld />}
         </div>
       )}
       <nav className="bottom-nav" aria-label="Main navigation">
