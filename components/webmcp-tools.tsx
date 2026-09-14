@@ -20,7 +20,7 @@ export function WebMcpTools() {
     const context = (document as WebMcpDocument).modelContext;
     if (!context?.registerTool) return;
     const lifecycle = new AbortController();
-    registerAppTools(
+    void registerAppTools(
       context,
       {
         listActivities: () => snapshot.activities,
@@ -30,7 +30,9 @@ export function WebMcpTools() {
         updateCurrently,
       },
       lifecycle.signal,
-    );
+    ).catch((error) => {
+      console.error("Unable to register Wanna Know Dee tools.", error);
+    });
     return () => lifecycle.abort();
   }, [createSchedule, snapshot.activities, snapshot.schedules, updateCurrently, updateQuestion]);
 

@@ -4,7 +4,11 @@ import { registerAppTools, type RegisteredTool } from "@/lib/webmcp";
 describe("WebMCP tools", () => {
   it("registers the app's five real journeys", () => {
     const tools: RegisteredTool[] = [];
-    const context = { registerTool: (tool: RegisteredTool) => tools.push(tool) };
+    const context = {
+      registerTool: (tool: RegisteredTool) => {
+        tools.push(tool);
+      },
+    };
 
     registerAppTools(context, {
       listActivities: () => [],
@@ -27,7 +31,11 @@ describe("WebMCP tools", () => {
     const tools: RegisteredTool[] = [];
     const addSchedule = vi.fn();
     registerAppTools(
-      { registerTool: (tool: RegisteredTool) => tools.push(tool) },
+      {
+        registerTool: (tool: RegisteredTool) => {
+          tools.push(tool);
+        },
+      },
       {
         listActivities: () => [],
         listSchedules: () => [],
@@ -42,5 +50,21 @@ describe("WebMCP tools", () => {
       tool?.execute({ activity_id: "matcha", date: "tomorrow", time: "6pm" }),
     ).rejects.toThrow("YYYY-MM-DD");
     expect(addSchedule).not.toHaveBeenCalled();
+  });
+
+  it("ignores expected registration aborts during React cleanup", async () => {
+    const context = {
+      registerTool: () => Promise.reject(new DOMException("Cancelled", "AbortError")),
+    };
+
+    await expect(
+      registerAppTools(context, {
+        listActivities: () => [],
+        listSchedules: () => [],
+        addSchedule: vi.fn(),
+        updateQuestion: vi.fn(),
+        updateCurrently: vi.fn(),
+      }),
+    ).resolves.toBeUndefined();
   });
 });

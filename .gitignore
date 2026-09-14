@@ -30,6 +30,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -44,3 +45,31 @@ next-env.d.ts
 /.codex/
 /outputs/
 /work/
+
+# Starter-kit files that are not part of this app
+/.openai/
+/AGENTS.md
+/CLAUDE.md
+/app/chatgpt-auth.ts
+/build/
+/cloudflare-env.d.ts
+/db/
+/drizzle.config.ts
+/drizzle/
+/examples/
+/hooks/
+/public/file.svg
+/public/globe.svg
+/public/window.svg
+/scripts/
+/vendor/*.LICENSE.md
+/vite.config.ts
+
+# Only keep the UI primitives used by Wanna Know Dee
+/components/ui/*
+!/components/ui/alert-dialog.tsx
+!/components/ui/button.tsx
+!/components/ui/dialog.tsx
+!/components/ui/input.tsx
+!/components/ui/label.tsx
+!/components/ui/textarea.tsx

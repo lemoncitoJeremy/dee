@@ -37,11 +37,17 @@ function stringValue(input: Record<string, unknown>, key: string): string {
   return value;
 }
 
-export function registerAppTools(
+function isAbortError(error: unknown): boolean {
+  return error instanceof DOMException
+    ? error.name === "AbortError"
+    : Boolean(error && typeof error === "object" && "name" in error && error.name === "AbortError");
+}
+
+export async function registerAppTools(
   context: ModelContext,
   actions: AppToolActions,
   signal?: AbortSignal,
-) {
+): Promise<void> {
   const tools: RegisteredTool[] = [
     {
       name: "list_activities",
@@ -143,5 +149,16 @@ export function registerAppTools(
     },
   ];
 
-  for (const tool of tools) void context.registerTool(tool, { signal });
+  const registrations = tools.map((tool) => {
+    try {
+      return Promise.resolve(context.registerTool(tool, { signal })).catch((error) => {
+        if (!isAbortError(error)) throw error;
+      });
+    } catch (error) {
+      if (!isAbortError(error)) throw error;
+      return Promise.resolve();
+    }
+  });
+
+  await Promise.all(registrations);
 }
