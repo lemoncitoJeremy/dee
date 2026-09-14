@@ -2,7 +2,7 @@ import { act, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { AppDataProvider, useAppData } from "@/lib/repository/provider";
 import { demoSnapshot } from "@/lib/seed";
-import type { AppRepository, DeeQuestion } from "@/lib/types";
+import type { AppRepository, DeeQuestion, Schedule } from "@/lib/types";
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -43,5 +43,46 @@ describe("AppDataProvider", () => {
 
     expect(screen.getByText(/201:matcha/)).toBeVisible();
     expect(screen.getByText(/202:ramen/)).toBeVisible();
+  });
+
+  it("does not erase a concurrent create when another mutation fails", async () => {
+    const created = deferred<Schedule>();
+    const repository: AppRepository = {
+      load: vi.fn(async () => structuredClone(demoSnapshot)),
+      createSchedule: vi.fn(() => created.promise),
+      updateSchedule: vi.fn(),
+      deleteSchedule: vi.fn(),
+      updateQuestion: vi.fn(async () => { throw new Error("offline"); }),
+      updateCurrently: vi.fn(),
+    };
+    let actions: ReturnType<typeof useAppData> | undefined;
+    function Harness() {
+      actions = useAppData();
+      return <div>{actions.snapshot.schedules.map((item) => item.notes).join("|")}</div>;
+    }
+    render(<AppDataProvider repositoryOverride={repository}><Harness /></AppDataProvider>);
+    await waitFor(() => expect(repository.load).toHaveBeenCalled());
+
+    let createPromise!: Promise<void>;
+    act(() => {
+      createPromise = actions!.createSchedule({
+        activity_id: demoSnapshot.activities[0].id,
+        date: "2026-09-17",
+        time: "18:00:00",
+        notes: "still here",
+      });
+    });
+    await expect(actions!.updateQuestion(demoSnapshot.questions[0].id, "matcha")).rejects.toThrow("Save failed");
+    created.resolve({
+      id: "created",
+      activity_id: demoSnapshot.activities[0].id,
+      date: "2026-09-17",
+      time: "18:00:00",
+      notes: "still here",
+      created_at: "now",
+    });
+    await act(async () => { await createPromise; });
+
+    expect(screen.getByText("still here")).toBeVisible();
   });
 });
