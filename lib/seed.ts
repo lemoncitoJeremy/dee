@@ -5,28 +5,28 @@ const createdAt = "2026-09-14T00:00:00.000Z";
 export const demoSnapshot: AppSnapshot = {
   activities: [
     {
-      id: "activity-matcha",
+      id: "00000000-0000-0000-0000-000000000101",
       name: "Matcha Girly",
       description: "Feeling low on matcha or probably me?",
       icon: "🍵",
       created_at: createdAt,
     },
     {
-      id: "activity-race",
+      id: "00000000-0000-0000-0000-000000000102",
       name: "Race Week",
       description: "It’s race week. You know what that means.",
       icon: "🏎️",
       created_at: createdAt,
     },
     {
-      id: "activity-spicy",
+      id: "00000000-0000-0000-0000-000000000103",
       name: "Spicy",
       description: "Feeling a little spicy?",
       icon: "🌶️",
       created_at: createdAt,
     },
     {
-      id: "activity-japanese",
+      id: "00000000-0000-0000-0000-000000000104",
       name: "Japanese Food",
       description: "A little sushi wouldn’t hurt, right?",
       icon: "🍣",
@@ -35,13 +35,13 @@ export const demoSnapshot: AppSnapshot = {
   ],
   schedules: [],
   questions: [
-    ["question-drink", "🍵", "What’s your favorite drink?"],
-    ["question-food", "🍜", "What’s your favorite food?"],
-    ["question-music", "🎧", "What kind of music do you like?"],
-    ["question-movie", "🎬", "What’s a movie or series you love?"],
-    ["question-happy", "🌷", "What’s something that always makes you happy?"],
-    ["question-travel", "✈️", "Where would you love to travel?"],
-    ["question-thinking", "💭", "What’s something you’ve been thinking about lately?"],
+    ["00000000-0000-0000-0000-000000000201", "🍵", "What’s your favorite drink?"],
+    ["00000000-0000-0000-0000-000000000202", "🍜", "What’s your favorite food?"],
+    ["00000000-0000-0000-0000-000000000203", "🎧", "What kind of music do you like?"],
+    ["00000000-0000-0000-0000-000000000204", "🎬", "What’s a movie or series you love?"],
+    ["00000000-0000-0000-0000-000000000205", "🌷", "What’s something that always makes you happy?"],
+    ["00000000-0000-0000-0000-000000000206", "✈️", "Where would you love to travel?"],
+    ["00000000-0000-0000-0000-000000000207", "💭", "What’s something you’ve been thinking about lately?"],
   ].map(([id, icon, question]) => ({
     id,
     icon,
@@ -51,7 +51,7 @@ export const demoSnapshot: AppSnapshot = {
     updated_at: createdAt,
   })),
   currently: {
-    id: "currently-dee",
+    id: "00000000-0000-0000-0000-000000000301",
     listening_to: null,
     craving: null,
     watching: null,

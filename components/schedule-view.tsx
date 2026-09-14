@@ -9,10 +9,10 @@ import { WeekSwitcher } from "@/components/week-switcher";
 import { ScheduleDialog } from "@/components/schedule-dialog";
 
 const activityTone: Record<string, string> = {
-  "activity-matcha": "event-matcha",
-  "activity-race": "event-racing",
-  "activity-spicy": "event-chili",
-  "activity-japanese": "event-sushi",
+  "00000000-0000-0000-0000-000000000101": "event-matcha",
+  "00000000-0000-0000-0000-000000000102": "event-racing",
+  "00000000-0000-0000-0000-000000000103": "event-chili",
+  "00000000-0000-0000-0000-000000000104": "event-sushi",
 };
 
 export function ScheduleView() {

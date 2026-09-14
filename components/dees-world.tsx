@@ -10,26 +10,26 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 const shortLabels: Record<string, string> = {
-  "question-drink": "favorite drink",
-  "question-food": "favorite food",
-  "question-music": "music",
-  "question-movie": "movie or series",
-  "question-happy": "what makes you happy",
-  "question-travel": "travel dream",
-  "question-thinking": "recent thought",
+  "00000000-0000-0000-0000-000000000201": "favorite drink",
+  "00000000-0000-0000-0000-000000000202": "favorite food",
+  "00000000-0000-0000-0000-000000000203": "music",
+  "00000000-0000-0000-0000-000000000204": "movie or series",
+  "00000000-0000-0000-0000-000000000205": "what makes you happy",
+  "00000000-0000-0000-0000-000000000206": "travel dream",
+  "00000000-0000-0000-0000-000000000207": "recent thought",
 };
 
 function factFor(question: DeeQuestion): string {
   const answer = question.answer;
   if (!answer) return "";
   const templates: Record<string, string> = {
-    "question-drink": `Dee’s favorite drink is ${answer}. ${question.icon}`,
-    "question-food": `Dee’s favorite food is ${answer}. ${question.icon}`,
-    "question-music": `Dee likes listening to ${answer}. ${question.icon}`,
-    "question-movie": `A movie or series Dee loves is ${answer}. ${question.icon}`,
-    "question-happy": `${answer} always makes Dee happy. ${question.icon}`,
-    "question-travel": `Dee would love to travel to ${answer}. ${question.icon}`,
-    "question-thinking": `Lately, Dee has been thinking about ${answer}. ${question.icon}`,
+    "00000000-0000-0000-0000-000000000201": `Dee’s favorite drink is ${answer}. ${question.icon}`,
+    "00000000-0000-0000-0000-000000000202": `Dee’s favorite food is ${answer}. ${question.icon}`,
+    "00000000-0000-0000-0000-000000000203": `Dee likes listening to ${answer}. ${question.icon}`,
+    "00000000-0000-0000-0000-000000000204": `A movie or series Dee loves is ${answer}. ${question.icon}`,
+    "00000000-0000-0000-0000-000000000205": `${answer} always makes Dee happy. ${question.icon}`,
+    "00000000-0000-0000-0000-000000000206": `Dee would love to travel to ${answer}. ${question.icon}`,
+    "00000000-0000-0000-0000-000000000207": `Lately, Dee has been thinking about ${answer}. ${question.icon}`,
   };
   return templates[question.id] ?? `${question.question} ${answer}`;
 }
